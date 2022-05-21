@@ -2,22 +2,18 @@
 
 using static System.Text.Encoding;
 
-public enum SerialType
-{
+public enum SerialType {
     Null,
     Int8,
     Text
 }
 
-public record Column(SerialType Type, ReadOnlyMemory<byte> Content)
-{
-    public static Column Parse(int serialType, ReadOnlyMemory<byte> stream)
-    {
+public record Column(SerialType Type, ReadOnlyMemory<byte> Content) {
+    public static Column Parse(int serialType, ReadOnlyMemory<byte> stream) {
         static bool IsText(int serialType) => serialType >= 13 && serialType % 2 == 1;
         static int GetTextLen(int serialType) => (serialType - 13) / 2;
 
-        return serialType switch
-        {
+        return serialType switch {
             0 => new(SerialType.Null, ReadOnlyMemory<byte>.Empty),
             1 => new(SerialType.Int8, stream[0..1]),
             var t when IsText(t) => new(SerialType.Text, stream[..GetTextLen(t)]),
@@ -25,8 +21,7 @@ public record Column(SerialType Type, ReadOnlyMemory<byte> Content)
         };
     }
 
-    public string Render() => Type switch
-    {
+    public string Render() => Type switch {
         SerialType.Null => "NULL",
         SerialType.Int8 => ToByte().ToString(),
         SerialType.Text => ToUtf8String(),

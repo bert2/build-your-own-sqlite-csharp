@@ -2,8 +2,7 @@
 
 using static System.Buffers.Binary.BinaryPrimitives;
 
-public enum BTreePage
-{
+public enum BTreePage {
     InteriorIndex = 2,
     InteriorTable = 5,
     LeafIndex = 10,
@@ -15,16 +14,13 @@ public record PageHeader(
     ushort FirstFreeBlockStart,
     ushort NumberOfCells,
     ushort StartOfContentArea,
-    byte FragmentedFreeBytes)
-{
+    byte FragmentedFreeBytes) {
     public const byte MinSize = 8;
     public const byte MaxSize = 12;
 
-    public static PageHeader Parse(ReadOnlyMemory<byte> stream)
-    {
+    public static PageHeader Parse(ReadOnlyMemory<byte> stream) {
         var bytes = stream.Span;
-        var pageType = bytes[0] switch
-        {
+        var pageType = bytes[0] switch {
             2 => BTreePage.InteriorIndex,
             5 => BTreePage.InteriorTable,
             10 => BTreePage.LeafIndex,

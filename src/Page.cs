@@ -2,10 +2,8 @@
 
 using static System.Buffers.Binary.BinaryPrimitives;
 
-public record Page(PageHeader Header, IEnumerable<Record> Records)
-{
-    public static Page Parse(byte pageNum, Db db)
-    {
+public record Page(PageHeader Header, IEnumerable<Record> Records) {
+    public static Page Parse(byte pageNum, Db db) {
         var dbHeaderOffset = pageNum == 1 ? DbHeader.Size : 0;
         var pageData = db.Page(pageNum);
 
@@ -16,8 +14,7 @@ public record Page(PageHeader Header, IEnumerable<Record> Records)
             .Chunk(2)
             .Take(header.NumberOfCells)
             .Select(bytes => ReadUInt16BigEndian(bytes.Span))
-            .Select(cellPtr =>
-            {
+            .Select(cellPtr => {
                 var stream = pageData[cellPtr..];
 
                 var (_payloadSize, bytesRead1) = Varint.Parse(stream);

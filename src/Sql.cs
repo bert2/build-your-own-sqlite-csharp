@@ -17,8 +17,7 @@ public record SelectStmt(string[] Cols, string Tbl, Filter? Filter);
 
 public record CreateTblStmt(string Tbl, string[] Cols);
 
-public static class Sql
-{
+public static class Sql {
     public static SelectStmt ParseSelectStmt(string sql) => selectStmt.Run(sql).GetResult();
 
     public static CreateTblStmt ParseCreateTblStmt(string sql) => createTblStmt.Run(sql).GetResult();

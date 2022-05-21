@@ -1,9 +1,7 @@
 ﻿namespace codecrafters_sqlite;
 
-public record Db(ushort PageSize, ReadOnlyMemory<byte> Data)
-{
-    public static Db FromFile(string path)
-    {
+public record Db(ushort PageSize, ReadOnlyMemory<byte> Data) {
+    public static Db FromFile(string path) {
         var data = File.ReadAllBytes(path);
         return new(DbHeader.PageSize(data), data.AsMemory());
     }
