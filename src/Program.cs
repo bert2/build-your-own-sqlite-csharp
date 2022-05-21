@@ -47,13 +47,11 @@ switch (command) {
         var page = Page.Parse(tblSchema.RootPage, db);
         var rows = BTree
             .FullTblScan(page, db)
-            .Select(cell => cell.Payload)
-            .Where(record
+            .Where(cell
                 => selectStmt.Filter is null
-                || record[colIdxs[selectStmt.Filter.Col]].ToUtf8String() == selectStmt.Filter.Val)
-            .Select(record => selectStmt
-                .Cols
-                .Select(col => record[colIdxs[col]].Render())
+                || cell.Payload[colIdxs[selectStmt.Filter.Col]].ToUtf8String() == selectStmt.Filter.Val)
+            .Select(cell => selectStmt.Cols
+                .Select(col => col == "id" ? cell.RowId.ToString() : cell.Payload[colIdxs[col]].Render())
                 .Join("|"))
             .Join("\n");
 
