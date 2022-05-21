@@ -45,9 +45,9 @@ switch (command) {
             .ToDictionary(x => x.Value, x => x.Key);
 
         var page = Page.Parse(tblSchema.RootPage, db);
-        var rows = page
-            .CellPointers()
-            .Select(ptr => LeafTblCell.Parse(page.Data[ptr..]).Payload)
+        var rows = BTree
+            .FullTblScan(page, db)
+            .Select(cell => cell.Payload)
             .Where(record
                 => selectStmt.Filter is null
                 || record[colIdxs[selectStmt.Filter.Col]].ToUtf8String() == selectStmt.Filter.Val)

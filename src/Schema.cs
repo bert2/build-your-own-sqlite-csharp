@@ -8,10 +8,9 @@ public record Schema(
     string Sql) {
     public static IEnumerable<Schema> ParseAll(Db db) {
         var page = Page.Parse(pageNum: 1, db);
-        return page
-            .CellPointers()
-            .Select(ptr => LeafTblCell.Parse(page.Data[ptr..]).Payload)
-            .Select(Parse);
+        return BTree
+            .FullTblScan(page, db)
+            .Select(cell => Parse(cell.Payload));
     }
 
     /// <summary>Parses a record into a schema</summary>

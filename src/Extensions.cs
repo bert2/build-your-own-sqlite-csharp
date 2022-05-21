@@ -17,4 +17,14 @@ public static class Extensions {
     public static string Join(this IEnumerable<string> source, string sep) => string.Join(sep, source);
 
     public static IEnumerable<T> Yield<T>(this T x) => Enumerable.Repeat(x, 1);
+
+    /// <summary>
+    /// Appends a lazily calculated value to the end of the sequence.
+    /// </summary>
+    /// <seealso>https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.append</seealso>
+    public static IEnumerable<T> Append<T>(this IEnumerable<T> source, Func<T> element) {
+        foreach (var item in source)
+            yield return item;
+        yield return element();
+    }
 }

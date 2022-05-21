@@ -12,7 +12,7 @@ public record Db(ushort PageSize, ReadOnlyMemory<byte> Data) {
 
     public ReadOnlyMemory<byte> Slice(int start, int length) => Data.Slice(start, length);
 
-    public ReadOnlyMemory<byte> Page(byte pageNum) => Data.Slice((pageNum - 1) * PageSize, PageSize);
+    public ReadOnlyMemory<byte> Page(int pageNum) => Data.Slice((pageNum - 1) * PageSize, PageSize);
 
     public static implicit operator ReadOnlyMemory<byte>(Db db) => db.Data;
 }

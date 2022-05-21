@@ -18,6 +18,6 @@ public record IntrTblCell(long RowId, int ChildPage) {
     public static IntrTblCell Parse(ReadOnlyMemory<byte> data) {
         var childPage = ReadInt32BigEndian(data[..4].Span);
         var (rowId, _) = Varint.Parse(data[4..]);
-        return new(childPage, checked((int)rowId));
+        return new(checked((int)rowId), childPage);
     }
 }
