@@ -1,23 +1,21 @@
 ﻿namespace codecrafters_sqlite;
 
-using static System.Text.Encoding;
-
 public record Schema(
     string Type,
     string Name,
     string TableName,
     byte RootPage,
-    string Sql)
-{
-    /// <summary>Parses a record into a schema</summary>
-    public static Schema Parse(Record record)
-    {
-        var type = UTF8.GetString(record.Columns[0].Span);
-        var name = UTF8.GetString(record.Columns[1].Span);
-        var tableName = UTF8.GetString(record.Columns[2].Span);
-        var rootPage = record.Columns[3].Span[0];
-        var sql = UTF8.GetString(record.Columns[4].Span);
+    string Sql) {
+    public static IEnumerable<Schema> ParseAll(Db db) => Page
+        .Parse(pageNum: 1, db)
+        .Records
+        .Select(Parse);
 
-        return new(type, name, tableName, rootPage, sql);
-    }
+    /// <summary>Parses a record into a schema</summary>
+    public static Schema Parse(Record record) => new(
+        Type: record.Columns[0].ToUtf8String(),
+        Name: record.Columns[1].ToUtf8String(),
+        TableName: record.Columns[2].ToUtf8String(),
+        RootPage: record.Columns[3].ToByte(),
+        Sql: record.Columns[4].ToUtf8String());
 }

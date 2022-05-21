@@ -17,6 +17,9 @@ public record PageHeader(
     ushort StartOfContentArea,
     byte FragmentedFreeBytes)
 {
+    public const byte MinSize = 8;
+    public const byte MaxSize = 12;
+
     public static PageHeader Parse(ReadOnlyMemory<byte> stream)
     {
         var bytes = stream.Span;
@@ -35,4 +38,10 @@ public record PageHeader(
 
         return new(pageType, firstFreeBlockStart, numberOfCells, startOfContentArea, fragmentedFreeBytes);
     }
+
+    public byte Size() => PageType switch {
+        BTreePage.LeafTable => MinSize,
+        BTreePage.LeafIndex => MinSize,
+        _ => MaxSize
+    };
 }

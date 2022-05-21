@@ -1,47 +1,63 @@
 ﻿using codecrafters_sqlite;
+using MoreLinq;
 
-using static System.Buffers.Binary.BinaryPrimitives;
+using static System.StringComparison;
 
-// Parse arguments
-var (path, command) = args.Length switch
-{
+var (path, command) = args.Length switch {
     0 => throw new InvalidOperationException("Missing <database path> and <command>"),
     1 => throw new InvalidOperationException("Missing <command>"),
     _ => (args[0], args[1])
 };
 
-// Read database file into database
-var database = File.ReadAllBytes(path).AsMemory();
+var db = Db.FromFile(path);
 
-// Parse command and act accordingly
-if (command == ".dbinfo")
-{
-    // Parse page header from database
-    var pageHeader = PageHeader.Parse(database[100..108]);
+switch (command) {
+    case ".dbinfo": {
+        var numTables = Schema.ParseAll(db).Count();
 
-    // Obtain all cell pointers
-    var cellPointers = database[108..]
-        .Chunk(2)
-        .Take(pageHeader.NumberOfCells)
-        .Select(bytes => ReadUInt16BigEndian(bytes.Span));
+        Console.WriteLine($"number of tables: {numTables}");
+        break;
+    }
+    case ".tables": {
+        var names = Schema.ParseAll(db)
+            .Select(schema => schema.Name)
+            .Join(" ");
 
-    // Obtain all schema records
-    var schemas = cellPointers
-        .Select(cellPointer =>
-        {
-            var stream = database[cellPointer..];
+        Console.WriteLine(names);
+        break;
+    }
+    case var sql when sql.StartsWith("SELECT COUNT(*) FROM ", OrdinalIgnoreCase): {
+        var tblName = sql.Split(' ')[3];
+        var tblSchema = Schema.ParseAll(db).First(schema => schema.Name == tblName);
 
-            var (_payloadSize, bytesRead1) = Varint.Parse(stream);
-            var (_rowId, bytesRead2) = Varint.Parse(stream[bytesRead1..]);
+        var count = Page.Parse(tblSchema.RootPage, db)
+            .Records
+            .Count();
 
-            var record = Record.Parse(stream[(bytesRead1 + bytesRead2)..]);
-            return Schema.Parse(record);
-        })
-        .ToArray();
+        Console.WriteLine(count);
+        break;
+    }
+    case var sql: {
+        var selectStmt = Sql.ParseSelectStmt(sql);
+        var tblSchema = Schema.ParseAll(db)
+            .First(schema => schema.Name == selectStmt.Tbl);
+        var colIdxs = Sql.ParseCreateTblStmt(tblSchema.Sql)
+            .Cols
+            .Index()
+            .ToDictionary(x => x.Value, x => x.Key);
 
-    Console.WriteLine($"number of tables: {schemas.Length}");
-}
-else
-{
-    throw new InvalidOperationException($"Invalid command: {command}");
+        var rows = Page.Parse(tblSchema.RootPage, db)
+            .Records
+            .Where(record
+                => selectStmt.Filter is null
+                || record[colIdxs[selectStmt.Filter.Col]].ToUtf8String() == selectStmt.Filter.Val)
+            .Select(record => selectStmt
+                .Cols
+                .Select(col => record[colIdxs[col]].Render())
+                .Join("|"))
+            .Join("\n");
+
+        Console.WriteLine(rows);
+        break;
+    }
 }
