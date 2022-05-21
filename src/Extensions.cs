@@ -15,4 +15,6 @@ public static class Extensions {
     }
 
     public static string Join(this IEnumerable<string> source, string sep) => string.Join(sep, source);
+
+    public static IEnumerable<T> Yield<T>(this T x) => Enumerable.Repeat(x, 1);
 }

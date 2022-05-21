@@ -2,27 +2,23 @@
 
 using static System.Buffers.Binary.BinaryPrimitives;
 
-public record Page(PageHeader Header, IEnumerable<Record> Records) {
+public record Page(byte Num, PageHeader Header, ReadOnlyMemory<byte> Data) {
     public static Page Parse(byte pageNum, Db db) {
         var dbHeaderOffset = pageNum == 1 ? DbHeader.Size : 0;
         var pageData = db.Page(pageNum);
-
         var header = PageHeader.Parse(pageData.Slice(dbHeaderOffset, PageHeader.MaxSize));
-        var cellPtrsOffset = dbHeaderOffset + header.Size();
-
-        var records = pageData[cellPtrsOffset..]
-            .Chunk(2)
-            .Take(header.NumberOfCells)
-            .Select(bytes => ReadUInt16BigEndian(bytes.Span))
-            .Select(cellPtr => {
-                var stream = pageData[cellPtr..];
-
-                var (_payloadSize, bytesRead1) = Varint.Parse(stream);
-                var (_rowId, bytesRead2) = Varint.Parse(stream[bytesRead1..]);
-
-                return Record.Parse(stream[(bytesRead1 + bytesRead2)..]);
-            });
-
-        return new(header, records);
+        return new(pageNum, header, pageData);
     }
+
+    public IEnumerable<ushort> CellPointers() {
+        var cellPtrsOffset = Header.Size() + (Num == 1 ? DbHeader.Size : 0);
+        return Data[cellPtrsOffset..]
+            .Chunk(2)
+            .Take(Header.NumberOfCells)
+            .Select(bytes => ReadUInt16BigEndian(bytes.Span));
+    }
+
+    //private static IEnumerable<Page> LeafPages(PageHeader header, ReadOnlyMemory<byte> pageData) {
+    //    if (header.PageType == BTreePage.LeafTable) yield return
+    //}
 }

@@ -30,9 +30,7 @@ switch (command) {
         var tblName = sql.Split(' ')[3];
         var tblSchema = Schema.ParseAll(db).First(schema => schema.Name == tblName);
 
-        var count = Page.Parse(tblSchema.RootPage, db)
-            .Records
-            .Count();
+        var count = Page.Parse(tblSchema.RootPage, db).Header.NumberOfCells;
 
         Console.WriteLine(count);
         break;
@@ -46,8 +44,10 @@ switch (command) {
             .Index()
             .ToDictionary(x => x.Value, x => x.Key);
 
-        var rows = Page.Parse(tblSchema.RootPage, db)
-            .Records
+        var page = Page.Parse(tblSchema.RootPage, db);
+        var rows = page
+            .CellPointers()
+            .Select(ptr => LeafTblCell.Parse(page.Data[ptr..]).Payload)
             .Where(record
                 => selectStmt.Filter is null
                 || record[colIdxs[selectStmt.Filter.Col]].ToUtf8String() == selectStmt.Filter.Val)
