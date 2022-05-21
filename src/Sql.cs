@@ -29,7 +29,7 @@ public static class Sql
 
     private static readonly StringParser regularIdentifier = Many1Chars(
         pred1: c => c == '_' || char.IsLetter(c),
-        pred: char.IsLetterOrDigit,
+        pred: c => c == '_' || char.IsLetterOrDigit(c),
         label: "regular identifier");
 
     private static readonly StringParser delimitedIdentifier =
