@@ -4,6 +4,33 @@ using System.Collections.Generic;
 using System.Linq;
 
 public static class BTree {
+    public static LeafTblCell? IntPkScan(long rowId, Page page, Db db) {
+        var type = page.Header.PageType;
+
+        if (type == BTreePage.LeafTable) {
+            return page
+                .CellPtrs()
+                .Select(ptr => LeafTblCell.Parse(page.Data[ptr..]))
+                .FirstOrDefault(cell => cell.RowId == rowId);
+        }
+
+        if (type != BTreePage.InteriorTable)
+            throw new InvalidOperationException($"Cannot search cells by integer primary key in {type}.");
+
+        var intrCell = page
+            .CellPtrs()
+            .Select(ptr => IntrTblCell.Parse(page.Data[ptr..]))
+            .FirstOrDefault(cell => rowId <= cell.RowId);
+
+        if (intrCell != null)
+            return IntPkScan(rowId, Page.Parse(intrCell.ChildPage, db), db);
+
+        var rightMostChildPage = page.Header.RightMostPtr
+            ?? throw new InvalidOperationException($"Expected {type} to have right most child page pointer.");
+
+        return IntPkScan(rowId, Page.Parse(rightMostChildPage, db), db);
+    }
+
     public static IEnumerable<LeafTblCell> FullTblScan(Page page, Db db)
         => LeafPages(page, db)
             .SelectMany(pg => pg.CellPtrs(), (pg, ptr) => (pg, ptr))

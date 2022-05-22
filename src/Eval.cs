@@ -1,6 +1,7 @@
 ﻿namespace codecrafters_sqlite;
 
 using System;
+using MoreLinq;
 
 public interface IValue : IEquatable<IValue> {
     string Render();
@@ -21,7 +22,13 @@ public record StrValue(string Val) : IValue {
     public bool Equals(IValue? other) => other is StrValue s && Equals(s);
 }
 
-public static class Eval {
-    public static IValue ColValue(string col, LeafTblCell cell, Dictionary<string, int> colIdxs)
+public record Eval {
+    private readonly Dictionary<string, int> colIdxs;
+    public Eval(ObjSchema tblSchema) => colIdxs = Sql
+        .ParseCreateTblStmt(tblSchema.Sql)
+        .Cols
+        .Index()
+        .ToDictionary(x => x.Value, x => x.Key);
+    public IValue ColValue(string col, LeafTblCell cell)
         => col == "id" ? new IntValue(cell.RowId) : cell.Payload[colIdxs[col]].ToValue();
 }

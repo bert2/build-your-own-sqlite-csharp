@@ -27,4 +27,6 @@ public static class Extensions {
             yield return item;
         yield return element();
     }
+
+    public static T? As<T>(this object x) where T: class => x as T;
 }

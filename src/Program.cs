@@ -48,24 +48,28 @@ switch (command) {
         var selectStmt = Sql.ParseSelectStmt(sql);
         var tblSchema = DbSchema.Parse(db).Tbl(selectStmt.Tbl);
 
-        if (false && selectStmt.Filter?.Col == "id") {
-            var colIdxs = Sql.ParseCreateTblStmt(tblSchema.Sql)
-                .Cols
-                .Index()
-                .ToDictionary(x => x.Value, x => x.Key);
+        if (selectStmt.Filter?.Col == "id") {
+            var eval = new Eval(tblSchema);
             var page = Page.Parse(tblSchema.RootPage, db);
+            var intPk = selectStmt.Filter.Val.As<IntValue>()?.Val
+                ?? throw new InvalidOperationException($"Filter value {selectStmt.Filter.Val} is not an integer primary key.");
+            var cell = BTree.IntPkScan(intPk, page, db);
+
+            if (cell != null) {
+                var row = selectStmt.Cols
+                    .Select(col => eval.ColValue(col, cell).Render())
+                    .Join('|');
+                Console.WriteLine(row);
+            }
         } else {
-            var colIdxs = Sql.ParseCreateTblStmt(tblSchema.Sql)
-                .Cols
-                .Index()
-                .ToDictionary(x => x.Value, x => x.Key);
+            var eval = new Eval(tblSchema);
             var page = Page.Parse(tblSchema.RootPage, db);
             var rows = BTree.FullTblScan(page, db)
                 .Where(cell
                     => selectStmt.Filter is null
-                    || Eval.ColValue(selectStmt.Filter.Col, cell, colIdxs).Equals(selectStmt.Filter.Val))
+                    || eval.ColValue(selectStmt.Filter.Col, cell).Equals(selectStmt.Filter.Val))
                 .Select(cell => selectStmt.Cols
-                    .Select(col => Eval.ColValue(col, cell, colIdxs).Render())
+                    .Select(col => eval.ColValue(col, cell).Render())
                     .Join('|'))
                 .Join('\n');
 
