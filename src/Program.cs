@@ -21,7 +21,7 @@ switch (command) {
     case ".tables": {
         var names = DbSchema.Parse(db)
             .Tbls
-            .Select(schema => schema.Name)
+            .Select(tbl => tbl.Name)
             .Join(' ');
 
         Console.WriteLine(names);
@@ -30,7 +30,7 @@ switch (command) {
     case ".schema": {
         var createStmts = DbSchema.Parse(db)
             .Tbls
-            .Select(schema => schema.Sql)
+            .Select(tbl => tbl.Sql)
             .Join('\n');
 
         Console.WriteLine(createStmts);
