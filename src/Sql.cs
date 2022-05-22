@@ -11,7 +11,7 @@ namespace codecrafters_sqlite;
 using Chars = CharStream<Unit>;
 using StringParser = FSharpFunc<CharStream<Unit>, Reply<string>>;
 
-public record Filter(string Col, string Val);
+public record Filter(string Col, IValue Val);
 
 public record SelectStmt(string[] Cols, string Tbl, Filter? Filter);
 
@@ -26,9 +26,14 @@ public static class Sql {
 
     public static CreateIdxStmt ParseCreateIdxStmt(string sql) => createIdxStmt.Run(sql).GetResult();
 
-    private static readonly StringParser stringLiteral =
+    private static readonly FSharpFunc<Chars, Reply<StrValue>> stringLiteral =
         Between('\'', ManyChars(c => c != '\''), '\'')
+        .Map(s => new StrValue(s))
         .Lbl_("string literal");
+
+    private static readonly FSharpFunc<Chars, Reply<IValue>> literal =
+        Choice(stringLiteral.Map(s => (IValue)s), Int.Map(i => (IValue)new IntValue(i)))
+        .Lbl_("literal");
 
     private static readonly StringParser regularIdentifier = Many1Chars(
         pred1: c => c == '_' || char.IsLetter(c),
@@ -42,13 +47,14 @@ public static class Sql {
     private static readonly StringParser identifier = delimitedIdentifier.Or(regularIdentifier);
 
     private static readonly StringParser colDef =
-        identifier.And(SkipMany(NoneOf(",)"))).Lbl_("column defintion");
+        identifier.And(SkipMany(NoneOf(",)")))
+        .Lbl_("column defintion");
 
     private static readonly FSharpFunc<Chars, Reply<Filter>> whereFilter =
         SkipCI("WHERE").And_(WS1)
         .AndR(identifier).And(WS)
         .And(Skip('=')).And(WS)
-        .And(stringLiteral)
+        .And(literal)
         .Map((col, val) => new Filter(col, val));
 
     private static readonly FSharpFunc<Chars, Reply<SelectStmt>> selectStmt =

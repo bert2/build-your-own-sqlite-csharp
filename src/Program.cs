@@ -47,23 +47,31 @@ switch (command) {
     case var sql: {
         var selectStmt = Sql.ParseSelectStmt(sql);
         var tblSchema = DbSchema.Parse(db).Tbl(selectStmt.Tbl);
-        var colIdxs = Sql.ParseCreateTblStmt(tblSchema.Sql)
-            .Cols
-            .Index()
-            .ToDictionary(x => x.Value, x => x.Key);
 
-        var page = Page.Parse(tblSchema.RootPage, db);
-        var rows = BTree
-            .FullTblScan(page, db)
-            .Where(cell
-                => selectStmt.Filter is null
-                || cell.Payload[colIdxs[selectStmt.Filter.Col]].ToUtf8String() == selectStmt.Filter.Val)
-            .Select(cell => selectStmt.Cols
-                .Select(col => col == "id" ? cell.RowId.ToString() : cell.Payload[colIdxs[col]].Render())
-                .Join('|'))
-            .Join('\n');
+        if (false && selectStmt.Filter?.Col == "id") {
+            var colIdxs = Sql.ParseCreateTblStmt(tblSchema.Sql)
+                .Cols
+                .Index()
+                .ToDictionary(x => x.Value, x => x.Key);
+            var page = Page.Parse(tblSchema.RootPage, db);
+        } else {
+            var colIdxs = Sql.ParseCreateTblStmt(tblSchema.Sql)
+                .Cols
+                .Index()
+                .ToDictionary(x => x.Value, x => x.Key);
+            var page = Page.Parse(tblSchema.RootPage, db);
+            var rows = BTree.FullTblScan(page, db)
+                .Where(cell
+                    => selectStmt.Filter is null
+                    || Eval.ColValue(selectStmt.Filter.Col, cell, colIdxs).Equals(selectStmt.Filter.Val))
+                .Select(cell => selectStmt.Cols
+                    .Select(col => Eval.ColValue(col, cell, colIdxs).Render())
+                    .Join('|'))
+                .Join('\n');
 
-        Console.WriteLine(rows);
+            Console.WriteLine(rows);
+        }
+
         break;
     }
 }

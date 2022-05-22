@@ -38,20 +38,19 @@ public record Column(SerialType Type, ReadOnlyMemory<byte> Content) {
         };
     }
 
-    public string Render() => Type switch {
-        SerialType.Null => "NULL",
-        SerialType.Int8 => ToByte().ToString(),
-        SerialType.Text => ToUtf8String()!,
-        _ => throw new NotSupportedException($"Can't print column with serial type {Type}."),
+    public byte ToByte() => Type switch {
+        SerialType.Int8 => Content.Span[0],
+        _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to byte.")
     };
 
-    public byte ToByte() => Type == SerialType.Int8
-        ? Content.Span[0]
-        : throw new NotSupportedException($"Can't convert column with serial type {Type} to byte.");
-
-    public string? ToUtf8String() => Type switch {
-        SerialType.Null => null,
+    public string ToUtf8String() => Type switch {
         SerialType.Text => UTF8.GetString(Content.Span),
         _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to UTF8 string.")
+    };
+
+    public IValue ToValue() => Type switch {
+        SerialType.Null => new NullValue(),
+        SerialType.Text => new StrValue(UTF8.GetString(Content.Span)),
+        _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to IValue.")
     };
 }

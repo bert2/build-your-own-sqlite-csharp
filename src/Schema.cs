@@ -31,9 +31,9 @@ public record ObjSchema(
     public bool IsTbl => Type == "table";
     public bool IsIdx => Type == "index";
     public static ObjSchema Parse(Record record) => new(
-        Type: record[0].ToUtf8String()!,
-        Name: record[1].ToUtf8String()!,
-        TableName: record[2].ToUtf8String()!,
+        Type: record[0].ToUtf8String(),
+        Name: record[1].ToUtf8String(),
+        TableName: record[2].ToUtf8String(),
         RootPage: record[3].ToByte(),
-        Sql: record[4].ToUtf8String()!);
+        Sql: record[4].ToUtf8String());
 }
