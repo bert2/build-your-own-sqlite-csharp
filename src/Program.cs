@@ -60,8 +60,8 @@ switch (command) {
                 || cell.Payload[colIdxs[selectStmt.Filter.Col]].ToUtf8String() == selectStmt.Filter.Val)
             .Select(cell => selectStmt.Cols
                 .Select(col => col == "id" ? cell.RowId.ToString() : cell.Payload[colIdxs[col]].Render())
-                .Join("|"))
-            .Join("\n");
+                .Join('|'))
+            .Join('\n');
 
         Console.WriteLine(rows);
         break;
