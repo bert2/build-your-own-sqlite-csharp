@@ -17,10 +17,14 @@ public record SelectStmt(string[] Cols, string Tbl, Filter? Filter);
 
 public record CreateTblStmt(string Tbl, string[] Cols);
 
+public record CreateIdxStmt(string Name, string TargetTbl, string[] TargetCols);
+
 public static class Sql {
     public static SelectStmt ParseSelectStmt(string sql) => selectStmt.Run(sql).GetResult();
 
     public static CreateTblStmt ParseCreateTblStmt(string sql) => createTblStmt.Run(sql).GetResult();
+
+    public static CreateIdxStmt ParseCreateIdxStmt(string sql) => createIdxStmt.Run(sql).GetResult();
 
     private static readonly StringParser stringLiteral =
         Between('\'', ManyChars(c => c != '\''), '\'')
@@ -69,4 +73,19 @@ public static class Sql {
         .And(EOF)
         .Map((tbl, cols) => new CreateTblStmt(tbl, cols.ToArray()))
         .Lbl_("CREATE TABLE statement");
+
+    private static readonly FSharpFunc<Chars, Reply<CreateIdxStmt>> createIdxStmt =
+        SkipCI("CREATE").And_(WS1)
+        .And_(SkipCI("INDEX")).And_(WS1)
+        .AndR(identifier).And(WS)
+        .And(SkipCI("ON")).And(WS1)
+        .And(identifier).And(WS)
+        .And(Between(
+            open: CharP('(').And(WS),
+            Many1(colDef, sep: CharP(',').And(WS)),
+            close: WS.And(CharP(')')).And(WS)))
+        .And(EOF)
+        .Map(Flat)
+        .Map((name, tbl, cols) => new CreateIdxStmt(name, tbl, cols.ToArray()))
+        .Lbl_("CREATE INDEX statement");
 }

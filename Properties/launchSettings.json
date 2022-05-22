@@ -2,7 +2,7 @@
   "profiles": {
     "codecrafters-sqlite": {
       "commandName": "Project",
-      "commandLineArgs": "../../../superheroes.db \"SELECT id, name FROM superheroes WHERE hair_color = 'Violet Hair'\""
+      "commandLineArgs": "../../../companies.db \".tables\""
     }
   }
 }

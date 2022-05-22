@@ -13,23 +13,32 @@ var db = Db.FromFile(path);
 
 switch (command) {
     case ".dbinfo": {
-        var numTables = Schema.ParseAll(db).Count();
+        var numTables = DbSchema.Parse(db).Tbls.Count();
 
         Console.WriteLine($"number of tables: {numTables}");
         break;
     }
     case ".tables": {
-        var names = Schema.ParseAll(db)
+        var names = DbSchema.Parse(db)
+            .Tbls
             .Select(schema => schema.Name)
-            .Join(" ");
+            .Join(' ');
 
         Console.WriteLine(names);
         break;
     }
+    case ".schema": {
+        var createStmts = DbSchema.Parse(db)
+            .Tbls
+            .Select(schema => schema.Sql)
+            .Join('\n');
+
+        Console.WriteLine(createStmts);
+        break;
+    }
     case var sql when sql.StartsWith("SELECT COUNT(*) FROM ", OrdinalIgnoreCase): {
         var tblName = sql.Split(' ')[3];
-        var tblSchema = Schema.ParseAll(db).First(schema => schema.Name == tblName);
-
+        var tblSchema = DbSchema.Parse(db).Tbl(tblName);
         var count = Page.Parse(tblSchema.RootPage, db).Header.NumberOfCells;
 
         Console.WriteLine(count);
@@ -37,8 +46,7 @@ switch (command) {
     }
     case var sql: {
         var selectStmt = Sql.ParseSelectStmt(sql);
-        var tblSchema = Schema.ParseAll(db)
-            .First(schema => schema.Name == selectStmt.Tbl);
+        var tblSchema = DbSchema.Parse(db).Tbl(selectStmt.Tbl);
         var colIdxs = Sql.ParseCreateTblStmt(tblSchema.Sql)
             .Cols
             .Index()
