@@ -29,4 +29,10 @@ public static class Extensions {
     }
 
     public static T? As<T>(this object x) where T: class => x as T;
+
+    public static T? TryGetValue<K, T>(this IDictionary<K, T> d, K k) where T: class
+        => d.TryGetValue(k, out var v) ? v : null;
+
+    public static bool LessThan(this string a, string b) => a.CompareTo(b) < 0;
+    public static bool LessOrEqualThan(this string a, string b) => a.CompareTo(b) <= 0;
 }

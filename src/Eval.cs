@@ -23,12 +23,20 @@ public record StrValue(string Val) : IValue {
 }
 
 public record Eval {
-    private readonly Dictionary<string, int> colIdxs;
-    public Eval(ObjSchema tblSchema) => colIdxs = Sql
-        .ParseCreateTblStmt(tblSchema.Sql)
-        .Cols
-        .Index()
-        .ToDictionary(x => x.Value, x => x.Key);
+    private readonly Dictionary<string, int> colPos;
+    private readonly HashSet<string>? idxCols;
+    public Eval(ObjSchema tblSchema, ObjSchema? idxSchema) {
+        colPos = Sql.ParseCreateTblStmt(tblSchema.Sql)
+            .Cols
+            .Index()
+            .ToDictionary(x => x.Value, x => x.Key);
+
+        if (idxSchema != null)
+            idxCols = Sql.ParseCreateIdxStmt(idxSchema.Sql).TargetCols.ToHashSet();
+    }
+
     public IValue ColValue(string col, LeafTblCell cell)
-        => col == "id" ? new IntValue(cell.RowId) : cell.Payload[colIdxs[col]].ToValue();
+        => col == "id" ? new IntValue(cell.RowId) : cell.Payload[colPos[col]].ToValue();
+
+    public bool HasIdx(string col) => idxCols?.Contains(col) == true;
 }

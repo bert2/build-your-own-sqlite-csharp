@@ -1,12 +1,15 @@
 ﻿namespace codecrafters_sqlite;
 
-public record DbSchema(Dictionary<string, ObjSchema> Objs) {
+public record DbSchema(Dictionary<string, ObjSchema> Objs, Dictionary<string, ObjSchema> Idxs) {
     public static DbSchema Parse(Db db) {
         var page = Page.Parse(pageNum: 1, db);
-        return new(BTree
-            .FullTblScan(page, db)
+        var objs = BTree
+            .TblScan(page, db)
             .Select(cell => ObjSchema.Parse(cell.Payload))
-            .ToDictionary(obj => obj.Name));
+            .ToArray();
+        return new(
+            objs.ToDictionary(obj => obj.Name),
+            objs.Where(obj => obj.IsIdx).ToDictionary(obj => obj.TblName));
     }
 
     public IEnumerable<ObjSchema> Tbls => Objs.Values.Where(obj => obj.IsTbl);
@@ -16,16 +19,13 @@ public record DbSchema(Dictionary<string, ObjSchema> Objs) {
             ? obj
             : throw new InvalidOperationException($"Unkown table '{name}'.");
 
-    public ObjSchema Idx(string name)
-        => Objs.TryGetValue(name, out var obj) && obj.IsIdx
-            ? obj
-            : throw new InvalidOperationException($"Unkown index '{name}'.");
+    public ObjSchema? Idx(string tblName) => Idxs.TryGetValue(tblName);
 }
 
 public record ObjSchema(
     string Type,
     string Name,
-    string TableName,
+    string TblName,
     byte RootPage,
     string Sql) {
     public bool IsTbl => Type == "table";
@@ -33,7 +33,7 @@ public record ObjSchema(
     public static ObjSchema Parse(Record record) => new(
         Type: record[0].ToUtf8String(),
         Name: record[1].ToUtf8String(),
-        TableName: record[2].ToUtf8String(),
+        TblName: record[2].ToUtf8String(),
         RootPage: record[3].ToByte(),
         Sql: record[4].ToUtf8String());
 }

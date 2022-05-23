@@ -3,10 +3,10 @@
 using static System.Buffers.Binary.BinaryPrimitives;
 
 public enum BTreePage {
-    InteriorIndex = 2,
-    InteriorTable = 5,
-    LeafIndex = 10,
-    LeafTable = 13,
+    IntrIdx = 2,
+    IntrTbl = 5,
+    LeafIdx = 10,
+    LeafTbl = 13,
 }
 
 public record PageHeader(
@@ -22,10 +22,10 @@ public record PageHeader(
     public static PageHeader Parse(ReadOnlyMemory<byte> stream) {
         var bytes = stream.Span;
         var type = bytes[0] switch {
-            2 => BTreePage.InteriorIndex,
-            5 => BTreePage.InteriorTable,
-            10 => BTreePage.LeafIndex,
-            13 => BTreePage.LeafTable,
+            2 => BTreePage.IntrIdx,
+            5 => BTreePage.IntrTbl,
+            10 => BTreePage.LeafIdx,
+            13 => BTreePage.LeafTbl,
             var x => throw new InvalidOperationException($"Invalid page value encountered: {x}")
         };
         var freeStart = ReadUInt16BigEndian(bytes[1..3]);
@@ -38,8 +38,8 @@ public record PageHeader(
     }
 
     public byte Size() => PageType switch {
-        BTreePage.LeafTable => MinSize,
-        BTreePage.LeafIndex => MinSize,
+        BTreePage.LeafTbl => MinSize,
+        BTreePage.LeafIdx => MinSize,
         _ => MaxSize
     };
 }

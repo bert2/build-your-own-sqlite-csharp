@@ -46,14 +46,16 @@ switch (command) {
     }
     case var sql: {
         var selectStmt = Sql.ParseSelectStmt(sql);
-        var tblSchema = DbSchema.Parse(db).Tbl(selectStmt.Tbl);
+        var dbSchema = DbSchema.Parse(db);
+        var tblSchema = dbSchema.Tbl(selectStmt.Tbl);
+        var idxSchema = dbSchema.Idx(selectStmt.Tbl);
+        var eval = new Eval(tblSchema, idxSchema);
+        var tblPage = Page.Parse(tblSchema.RootPage, db);
 
         if (selectStmt.Filter?.Col == "id") {
-            var eval = new Eval(tblSchema);
-            var page = Page.Parse(tblSchema.RootPage, db);
             var intPk = selectStmt.Filter.Val.As<IntValue>()?.Val
                 ?? throw new InvalidOperationException($"Filter value {selectStmt.Filter.Val} is not an integer primary key.");
-            var cell = BTree.IntPkScan(intPk, page, db);
+            var cell = BTree.IntPkScan(intPk, tblPage, db);
 
             if (cell != null) {
                 var row = selectStmt.Cols
@@ -61,10 +63,19 @@ switch (command) {
                     .Join('|');
                 Console.WriteLine(row);
             }
+        } else if (selectStmt.Filter != null && eval.HasIdx(selectStmt.Filter.Col)) {
+            var idxPage = Page.Parse(idxSchema!.RootPage, db);
+            var key = selectStmt.Filter.Val.As<StrValue>()?.Val
+                ?? throw new InvalidOperationException($"Filter value {selectStmt.Filter.Val} cannot be used for index scanning. Indexes are only supported on text columns.");
+            var rows = BTree.IdxScan(key, idxPage, tblPage, db)
+                .Select(cell => selectStmt.Cols
+                    .Select(col => eval.ColValue(col, cell).Render())
+                    .Join('|'))
+                .Join('\n');
+
+            Console.WriteLine(rows);
         } else {
-            var eval = new Eval(tblSchema);
-            var page = Page.Parse(tblSchema.RootPage, db);
-            var rows = BTree.FullTblScan(page, db)
+            var rows = BTree.TblScan(tblPage, db)
                 .Where(cell
                     => selectStmt.Filter is null
                     || eval.ColValue(selectStmt.Filter.Col, cell).Equals(selectStmt.Filter.Val))

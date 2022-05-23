@@ -21,3 +21,21 @@ public record IntrTblCell(long RowId, int ChildPage) {
         return new(checked((int)rowId), childPage);
     }
 }
+
+public record LeafIdxCell(Record Payload) {
+    public static LeafIdxCell Parse(ReadOnlyMemory<byte> data) {
+        var (payloadSize, bytesRead) = Varint.Parse(data);
+        var payload = Record.Parse(data.Slice(bytesRead, checked((int)payloadSize)));
+        return new(payload);
+    }
+}
+
+public record IntrIdxCell(int ChildPage, Record Payload) {
+    public static IntrIdxCell Parse(ReadOnlyMemory<byte> data) {
+        var childPage = ReadInt32BigEndian(data[..4].Span);
+        var (payloadSize, bytesRead) = Varint.Parse(data[4..]);
+        var payloadStart = 4 + bytesRead;
+        var payload = Record.Parse(data.Slice(payloadStart, checked((int)payloadSize)));
+        return new(childPage, payload);
+    }
+}

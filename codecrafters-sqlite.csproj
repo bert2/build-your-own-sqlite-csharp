@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="FParsec.CSharp" Version="12.2.0" />
     <PackageReference Include="morelinq" Version="3.3.2" />
+    <PackageReference Include="Nullable.Extensions" Version="4.1.0" />
   </ItemGroup>
 
 </Project>

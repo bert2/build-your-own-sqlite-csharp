@@ -1,5 +1,6 @@
 ﻿namespace codecrafters_sqlite;
 
+using static System.Buffers.Binary.BinaryPrimitives;
 using static System.Text.Encoding;
 
 public enum SerialType {
@@ -43,6 +44,13 @@ public record Column(SerialType Type, ReadOnlyMemory<byte> Content) {
         _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to byte.")
     };
 
+    public long ToLong() => Type switch {
+        SerialType.Int16 => ReadInt16BigEndian(Content.Span),
+        SerialType.Int24 => ReadInt24BigEndian(Content.Span),
+        SerialType.Int64 => ReadInt64BigEndian(Content.Span),
+        _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to long.")
+    };
+
     public string ToUtf8String() => Type switch {
         SerialType.Text => UTF8.GetString(Content.Span),
         _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to UTF8 string.")
@@ -53,4 +61,6 @@ public record Column(SerialType Type, ReadOnlyMemory<byte> Content) {
         SerialType.Text => new StrValue(UTF8.GetString(Content.Span)),
         _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to IValue.")
     };
+
+    private static int ReadInt24BigEndian(ReadOnlySpan<byte> source) => (ReadInt16BigEndian(source) << 8) + source[2];
 }
