@@ -10,12 +10,12 @@ public record Record(Column[] Columns) {
     public Column this[int i] => Columns[i];
 
     private static IEnumerable<Column> ParseColumns(ReadOnlyMemory<byte> stream) {
-        var (headerSize, headerOffset) = Varint.Parse(stream);
-        var contentOffset = checked((int)headerSize);
+        var (headerSize, headerOffset) = Varint32.Parse(stream);
+        var contentOffset = headerSize;
 
         while (headerOffset < headerSize) {
-            var (serialType, bytesRead) = Varint.Parse(stream[headerOffset..]);
-            var column = Column.Parse(checked((int)serialType), stream[contentOffset..]);
+            var (serialType, bytesRead) = Varint32.Parse(stream[headerOffset..]);
+            var column = Column.Parse(serialType, stream[contentOffset..]);
 
             yield return column;
 

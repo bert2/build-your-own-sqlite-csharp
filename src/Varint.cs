@@ -1,6 +1,13 @@
 ﻿namespace codecrafters_sqlite;
 
-public static class Varint {
+public static class Varint32 {
+    public static (int Value, byte Len) Parse(ReadOnlyMemory<byte> stream) {
+        var (v, l) = Varint64.Parse(stream);
+        return (checked((int)v), l);
+    }
+}
+
+public static class Varint64 {
     /// <summary>
     /// Parses SQLite's "varint" (short for variable-length integer) as mentioned here:
     /// https://www.sqlite.org/fileformat2.html#varint
