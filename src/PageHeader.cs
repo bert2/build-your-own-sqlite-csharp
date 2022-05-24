@@ -32,7 +32,9 @@ public record PageHeader(
         var numCells = ReadUInt16BigEndian(bytes[3..5]);
         var contentStart = ReadUInt16BigEndian(bytes[5..7]);
         var fragFreeBytes = bytes[7];
-        var rightMostPtr = ReadInt32BigEndian(bytes[8..12]);
+        int? rightMostPtr = type is BTreePage.IntrTbl or BTreePage.IntrIdx
+            ? ReadInt32BigEndian(bytes[8..12])
+            : null;
 
         return new(type, freeStart, numCells, contentStart, fragFreeBytes, rightMostPtr);
     }
