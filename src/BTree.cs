@@ -33,12 +33,10 @@ public static class BTree {
     }
 
     public static IEnumerable<LeafTblCell> IdxScan(string key, Page idxPage, Page tblPage, Db db) {
-        return FindIdxCells(idxPage)
-            .Select(cell => cell.Payload[1].ToLong())
-            .Select(rowId => IntPkScan(rowId, tblPage, db)
-                ?? throw new InvalidOperationException($"Row ID {rowId} referenced by index not found in table."));
+        return FindRowIds(idxPage).Select(rowId =>
+            IntPkScan(rowId, tblPage, db) ?? throw new InvalidOperationException($"Row ID {rowId} referenced by index not found in table."));
 
-        IEnumerable<LeafIdxCell> FindIdxCells(Page page) {
+        IEnumerable<long> FindRowIds(Page page) {
             var type = page.Header.PageType;
 
             if (type == BTreePage.LeafIdx) {
@@ -46,7 +44,8 @@ public static class BTree {
                     .CellPtrs()
                     .Select(ptr => LeafIdxCell.Parse(page.Data[ptr..]))
                     .SkipWhile(cell => cell.Payload[0].ToUtf8String().LessThan(key))
-                    .TakeWhile(cell => cell.Payload[0].ToUtf8String() == key);
+                    .TakeWhile(cell => cell.Payload[0].ToUtf8String() == key)
+                    .Select(cell => cell.Payload[1].ToLong());
             }
 
             if (type != BTreePage.IntrIdx)
@@ -55,13 +54,21 @@ public static class BTree {
             var rightMostChildPage = page.Header.RightMostPtr
                 ?? throw new InvalidOperationException($"Expected {type} to have right most child page pointer.");
 
+            var intrRowIds = new LinkedList<long>();
+
             return page
                 .CellPtrs()
                 .Select(ptr => IntrIdxCell.Parse(page.Data[ptr..]))
                 .Where(cell => key.LessOrEqualThan(cell.Payload[0].ToUtf8String()))
+                .Select(cell => {
+                    if (cell.Payload[0].ToUtf8String() == key)
+                        _ = intrRowIds.AddLast(cell.Payload[1].ToLong());
+                    return cell;
+                })
                 .Select(cell => Page.Parse(cell.ChildPage, db))
                 .Append(() => Page.Parse(rightMostChildPage, db))
-                .SelectMany(FindIdxCells);
+                .SelectMany(FindRowIds)
+                .Concat(intrRowIds);
         }
     }
 
