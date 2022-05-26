@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Nullable.Extensions;
 
+using static System.Diagnostics.Debug;
+
 public static class BTree {
     public static LeafTblCell? IntPkScan(long rowId, Page page, Db db) {
         var type = page.Header.PageType;
@@ -15,21 +17,19 @@ public static class BTree {
                 .FirstOrDefault(cell => cell.RowId == rowId);
         }
 
-        if (type != BTreePage.IntrTbl)
-            throw new InvalidOperationException($"Cannot search cells by integer primary key in {type}.");
+        Assert(type is BTreePage.IntrTbl, $"Cannot search cells by integer primary key in {type}.");
 
-        var intrCell = page
+        return page
             .CellPtrs()
             .Select(ptr => IntrTblCell.Parse(page.Data[ptr..]))
-            .FirstOrDefault(cell => rowId <= cell.RowId);
-
-        if (intrCell != null)
-            return IntPkScan(rowId, Page.Parse(intrCell.ChildPage, db), db);
-
-        var rightMostChildPage = page.Header.RightMostPtr
-            ?? throw new InvalidOperationException($"Expected {type} to have right most child page pointer.");
-
-        return IntPkScan(rowId, Page.Parse(rightMostChildPage, db), db);
+            .FirstOrDefault(cell => rowId <= cell.RowId)
+            .Switch(
+                notNull: cell => IntPkScan(rowId, Page.Parse(cell.ChildPage, db), db),
+                isNull: () => {
+                    var rightMostChildPage = page.Header.RightMostPtr
+                        ?? throw new InvalidOperationException($"Expected {type} to have right most child page pointer.");
+                    return IntPkScan(rowId, Page.Parse(rightMostChildPage, db), db);
+                });
     }
 
     public static IEnumerable<LeafTblCell> IdxScan(string key, Page idxPage, Page tblPage, Db db) {
@@ -48,8 +48,7 @@ public static class BTree {
                     .Select(cell => cell.Payload[1].ToLong());
             }
 
-            if (type != BTreePage.IntrIdx)
-                throw new InvalidOperationException($"Cannot search cells by index in {type}.");
+            Assert(type is BTreePage.IntrIdx, $"Cannot search cells by index in {type}.");
 
             var rightMostChildPage = page.Header.RightMostPtr
                 ?? throw new InvalidOperationException($"Expected {type} to have right most child page pointer.");
@@ -79,10 +78,11 @@ public static class BTree {
 
         IEnumerable<Page> LeafPages(Page page) {
             var type = page.Header.PageType;
-            if (type == BTreePage.LeafTbl)
-                return page.Yield();
-            if (type != BTreePage.IntrTbl)
-                throw new InvalidOperationException($"Cannot get leaf pages of {type}.");
+
+            if (type == BTreePage.LeafTbl) return page.Yield();
+
+            Assert(type is BTreePage.IntrTbl, $"Cannot get leaf pages of {type}.");
+
             var rightMostChildPage = page.Header.RightMostPtr
                 ?? throw new InvalidOperationException($"Expected {type} to have right most child page pointer.");
 

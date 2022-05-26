@@ -5,15 +5,9 @@ using static System.Text.Encoding;
 
 public enum SerialType {
     Null,
-    Int8,
-    Int16,
-    Int24,
-    Int32,
-    Int48,
-    Int64,
+    Int8, Int16, Int24, Int32, Int48, Int64,
     Float64,
-    Zero,
-    One,
+    Zero, One,
     Blob,
     Text
 }

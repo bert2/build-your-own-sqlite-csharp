@@ -1,5 +1,7 @@
 ﻿namespace codecrafters_sqlite;
 
+using Nullable.Extensions.Util;
+
 public record DbSchema(Dictionary<string, ObjSchema> Objs, Dictionary<string, ObjSchema> Idxs) {
     public static DbSchema Parse(Db db) {
         var page = Page.Parse(pageNum: 1, db);
