@@ -51,7 +51,8 @@ public record Column(SerialType Type, ReadOnlyMemory<byte> Content) {
         _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to long.")
     };
 
-    public string ToUtf8String() => Type switch {
+    public string? ToUtf8String() => Type switch {
+        SerialType.Null => null,
         SerialType.Text => UTF8.GetString(Content.Span),
         _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to UTF8 string.")
     };

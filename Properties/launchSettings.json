@@ -2,7 +2,7 @@
   "profiles": {
     "codecrafters-sqlite": {
       "commandName": "Project",
-      "commandLineArgs": "../../../companies.db \"select id,name from companies where country = 'uganda'\""
+      "commandLineArgs": "../../../companies.db \"SELECT id, name FROM companies WHERE country = 'tonga'\""
     }
   }
 }

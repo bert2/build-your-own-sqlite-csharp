@@ -30,7 +30,17 @@ public static class Extensions {
 
     public static T? As<T>(this object x) where T: class => x as T;
 
-    public static bool LessThan(this string a, string b) => a.CompareTo(b) < 0;
+    public static bool LessThan(this string? a, string? b) => (a, b) switch {
+        (null, null) => false,
+        (null, _   ) => true,
+        (_   , null) => false,
+        _            => a.CompareTo(b) < 0
+    };
 
-    public static bool LessOrEqualThan(this string a, string b) => a.CompareTo(b) <= 0;
+    public static bool LessOrEqualThan(this string? a, string? b) => (a, b) switch {
+        (null, null) => true,
+        (null, _   ) => true,
+        (_   , null) => false,
+        _            => a.CompareTo(b) <= 0
+    };
 }
