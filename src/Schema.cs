@@ -28,7 +28,7 @@ public record ObjSchema(
     string Type,
     string Name,
     string TblName,
-    byte RootPage,
+    int RootPage,
     string Sql) {
     public bool IsTbl => Type == "table";
     public bool IsIdx => Type == "index";
@@ -36,6 +36,6 @@ public record ObjSchema(
         Type: record[0].ToUtf8String(),
         Name: record[1].ToUtf8String(),
         TblName: record[2].ToUtf8String(),
-        RootPage: record[3].ToByte(),
+        RootPage: record[3].ToInt(),
         Sql: record[4].ToUtf8String());
 }

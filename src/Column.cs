@@ -33,14 +33,20 @@ public record Column(SerialType Type, ReadOnlyMemory<byte> Content) {
         };
     }
 
-    public byte ToByte() => Type switch {
+    public int ToInt() => Type switch {
         SerialType.Int8 => Content.Span[0],
-        _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to byte.")
+        SerialType.Int16 => ReadInt16BigEndian(Content.Span),
+        SerialType.Int24 => ReadInt24BigEndian(Content.Span),
+        SerialType.Int32 => ReadInt32BigEndian(Content.Span),
+        _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to int.")
     };
 
     public long ToLong() => Type switch {
+        SerialType.Int8 => Content.Span[0],
         SerialType.Int16 => ReadInt16BigEndian(Content.Span),
         SerialType.Int24 => ReadInt24BigEndian(Content.Span),
+        SerialType.Int32 => ReadInt32BigEndian(Content.Span),
+        SerialType.Int48 => ReadInt48BigEndian(Content.Span),
         SerialType.Int64 => ReadInt64BigEndian(Content.Span),
         _ => throw new NotSupportedException($"Can't convert column with serial type {Type} to long.")
     };
@@ -57,4 +63,6 @@ public record Column(SerialType Type, ReadOnlyMemory<byte> Content) {
     };
 
     private static int ReadInt24BigEndian(ReadOnlySpan<byte> source) => (ReadInt16BigEndian(source) << 8) + source[2];
+
+    private static long ReadInt48BigEndian(ReadOnlySpan<byte> source) => ((long)ReadInt32BigEndian(source) << 8) + source[4];
 }
