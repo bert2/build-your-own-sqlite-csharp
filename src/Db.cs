@@ -1,18 +1,27 @@
 ﻿namespace codecrafters_sqlite;
 
-public record Db(ushort PageSize, ReadOnlyMemory<byte> Data) {
-    public static Db FromFile(string path) {
-        var data = File.ReadAllBytes(path);
-        return new(DbHeader.PageSize(data), data.AsMemory());
+public sealed class Db : IDisposable {
+    private readonly FileStream fs;
+    private readonly BinaryReader reader;
+
+    public readonly ushort PageSize;
+
+    public static Db FromFile(string path) => new(path);
+
+    public Db(string path) {
+        fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+        reader = new BinaryReader(fs);
+        PageSize = DbHeader.PageSize(reader.ReadBytes(100));
     }
 
-    public byte this[int i] => Data.Span[i];
+    public ReadOnlyMemory<byte> Page(int pageNum) {
+        var pageStart = (pageNum - 1) * PageSize;
+        _ = reader.BaseStream.Seek(pageStart, SeekOrigin.Begin);
+        return reader.ReadBytes(PageSize);
+    }
 
-    public ReadOnlyMemory<byte> this[Range r] => Data[r];
-
-    public ReadOnlyMemory<byte> Slice(int start, int length) => Data.Slice(start, length);
-
-    public ReadOnlyMemory<byte> Page(int pageNum) => Data.Slice((pageNum - 1) * PageSize, PageSize);
-
-    public static implicit operator ReadOnlyMemory<byte>(Db db) => db.Data;
+    public void Dispose() {
+        reader.Dispose();
+        fs.Dispose();
+    }
 }
